@@ -5,6 +5,8 @@ title: Good practices with numpy random number generators
 excerpt_separator: <!--more-->
 ---
 
+**EDIT January 26, 2024**: I wrote an updated version of this blog post for the Scientific Python Blog. I recommend reading the updated version available [here](https://blog.scientific-python.org/numpy/numpy-rng/).
+
 Unless you are working on a problem where you can afford a true Random Number Generator (RNG), which is basically never for most of us, implementing something random means relying on a pseudo Random Number Generator. I want to share here what I have learnt about good practices with pseudo RNGs and especially the ones available in [numpy](https://numpy.org/). <!--more--> I assume a certain knowledge of numpy and that numpy 1.17 or greater is used. The reason for this is that great new features were introduced in the [random](https://numpy.org/doc/1.18/reference/random/index.html) module of version 1.17. As `numpy` is usually imported as `np`, I will sometimes use `np` instead of `numpy`. Finally, as I will not talk about true RNGs, RNG will always mean pseudo RNG in the rest of this blog post.
 
 ### The main messages
