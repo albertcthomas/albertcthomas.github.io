@@ -15,7 +15,7 @@ A proxy server acts as an intermediary between you (on the company network) and 
 
 ![proxy_server]({{ site.url }}{{ site.baseurl }}/assets/images/proxy_server_white.jpg)
 
-In most cases, the proxy is configured by your ompany's IT team on your machine and your favorite web browser (e.g. Chrome, Firefox) automatically retrieves this configuration. Therefore, you usually do not encounter proxy issues when browsing the web on this machine. However, when working on other machines or using applications that don’t automatically detect the proxy, you must manually configure the proxy settings.
+In most cases, the proxy is configured by your company's IT team on your machine and your favorite web browser (e.g. Chrome, Firefox) automatically retrieves this configuration. Therefore, you usually do not encounter proxy issues when browsing the web on this machine. However, when working on other machines or using applications that don’t automatically detect the proxy, you must manually configure the proxy settings.
 
 Keep in mind that while usually all external traffic requires the proxy, internal traffic does not. If you set up a proxy configuration without specifying exceptions for internal resources, those requests will fail.
 
@@ -126,7 +126,7 @@ I hope this blog post will help you resolve your proxy issues or at least make y
 * There are tools such as CNTLM that encrypt your password, centralize the proxy configuration and work for applications that do not allow passing a username and password to the proxy configuration.
 * Discussion on `HTTP_PROXY` or `http_proxy` and the different ways to pass multiple domains to `no_proxy`: <https://about.gitlab.com/blog/2021/01/27/we-need-to-talk-no-proxy/>
 
-[^1]: See the “Reserved characters after percent-encoding” table on the [Percent-encoding wikipedia page](https://en.wikipedia.org/wiki/Percent-encoding) for guidance.
+[^1]: See the “Reserved characters after percent-encoding” table on the [Percent-encoding Wikipedia page](https://en.wikipedia.org/wiki/Percent-encoding) for guidance.
 [^2]: Ensure this list also includes other CAs, as the proxy might not always replace the original certificate.
 [^3]: `pip` vendors `requests` and `urllib3`, meaning they are packaged directly within `pip` itself.
 [^4]: Don't confuse the third party package `urllib3` and the `urllib` module available in the Python standard library.
