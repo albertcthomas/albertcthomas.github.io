@@ -1,0 +1,13 @@
+{{ define "main" }}
+<!-- changing the list of the blog posts -->
+  <div class="post-list">
+    {{ range .Pages }}
+      <div class="post-item">
+        <span class="post-date">{{ .Date.Format "Jan 2, 2006" }}</span>
+        <span class="post-title">
+          <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+        </span>
+      </div>
+    {{ end }}
+  </div>
+{{ end }}

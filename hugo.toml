@@ -1,0 +1,80 @@
+baseURL = 'https://albertcthomas.github.io'
+languageCode = 'en-us'
+title = 'Albert Thomas'
+theme = 'devise'
+relativeURLs = true
+enableEmoji = true
+googleAnalytics = ""
+enableRobotsTXT = true
+copyright = "&copy; Copyright 2025, Albert Thomas"
+
+[params]
+  description = "Personal page of Albert Thomas"      # Your meta description of the site
+  header_title = "Albert Thomas"                 # Your header title
+  header_subtitle = "Research engineer in machine learning at Huawei" # Your header subtitle
+  # home_image = "/images/avatar.png"          # Path to header image starting from the static directory
+  recent_posts = 5                           # Max amount of recent posts to show
+  mainSections = ["posts"]   # Main sections to include in recent posts
+  [params.style]                             # CSS style overrides
+    backgroundColor = "#f8f9fa"
+    fontColor = "#212529"
+  [[params.social]]
+    fa_icon = "fab fa-github fa-1x"          # Font Awesome icon class
+    href = "http://github.com/albertcthomas"      # Link to associate with icon (http://, https://, mailto:)
+  [[params.social]]
+    fa_icon =  "fab fa-google-scholar fa-1x"
+    href = "https://scholar.google.com/citations?user=GzXiITUAAAAJ&hl=en"
+  [[params.social]]
+    fa_icon = "fab fa-linkedin-in fa-1x"
+    href = "https://www.linkedin.com/in/albert-thomas-35275688/"
+  [[params.social]]
+    fa_icon = "fab fa-twitter fa-1x"
+    href = "https://x.com/albertcthomas"
+  [[params.social]]
+    fa_icon = "fab fa-bluesky fa-1x"
+    href = "https://bsky.app/profile/albertcthomas.bsky.social"
+  [[params.social]]
+    fa_icon = "fas fa-at fa-1x"
+    href = "mailto:albert.thomas@centraliens.net"
+
+# Main menu items
+[menu]
+  [[menu.main]]
+    identifier = "about"
+    name = "About"
+    title = "About"
+    url = "/"
+    weight = -110
+  [[menu.main]]
+    identifier = "Blog"
+    name = "Blog"
+    title = "Blog"
+    url = "/blog/"
+    weight = -100
+  [[menu.main]]
+    identifier = "papers"
+    name = "Papers"
+    title = "Papers"
+    url = "/papers/"
+    weight = -90
+
+[markup]
+  [markup.goldmark.renderer]
+    unsafe = true
+  [markup.highlight]
+    anchorLineNos = false
+    codeFences = true
+    guessSyntax = false
+    hl_Lines = ''
+    hl_inline = false
+    lineAnchors = ''
+    lineNoStart = 1
+    lineNos = false
+    lineNumbersInTable = true
+    noClasses = true
+    noHl = false
+    style = 'monokailight'
+    tabWidth = 4
+
+[taxonomies]
+  tag = "tags"
