@@ -120,7 +120,7 @@ One important thing to be aware of is that **some proxies cache your configurati
 I hope this blog post will help you resolve your proxy issues or at least make you feel more confident when dealing with them. Even with experience, I sometimes encounter proxy or SSL/TLS errors that I can’t immediately explain, and debugging can be challenging, especially when the problem occurs deep within the connection chain.
 
 ## Remarks and resources
-* It is a bit annoying that there are applications that will not read your `http_proxy` environment variables or will not support having authentication information. It would also have been nice to have an environment variable like `http_proxy` to pass the trusted CA list and that would be read by almost all applications as `REQUESTS_CA_BUNDLE` is an environment variable specific to `requests`.
+* It is a bit annoying that there are applications that will not read your `http_proxy` environment variables or will not support having authentication information. It would also have been nice to have an environment variable to pass the trusted CA list that would be read by almost all applications as `REQUESTS_CA_BUNDLE` is an environment variable specific to `requests`.
 * A website on proxies with a great guide for SSL/TLS certificates <https://smarie.github.io/develop-behind-proxy/know_your_proxy/>.
 * There are tools such as CNTLM that encrypt your password, centralize the proxy configuration and work for applications that do not allow passing a username and password to the proxy configuration.
 * Discussion on `HTTP_PROXY` or `http_proxy` and the different ways to pass multiple domains to `no_proxy`: <https://about.gitlab.com/blog/2021/01/27/we-need-to-talk-no-proxy/>
