@@ -4,7 +4,7 @@ title = "Solving an SSL certificate error"
 date = 2025-03-03
 +++
 
-This post is a follow-up to my previous one on [python development behind a proxy server](../python_development_behind_proxies), which I recommend reading first. In that post, I explain how to use `REQUESTS_CA_BUNDLE` to specify the location of the SSL certificate bundle for `pip` and `conda`. However, this applies specifically to the `requests` python library, which both `conda` and `pip` rely on internally—**but not everything Python does**.
+This post is a follow-up to my previous one on [python development behind a proxy server](../python_development_behind_proxies), which I recommend reading first. In that post, I explain how to use `REQUESTS_CA_BUNDLE` to specify the location of the SSL certificate bundle for `pip` and `conda`. However, this applies specifically to the `requests` python library, which both `conda` and `pip` rely on internally **but not everything Python does**.
 
 Recently, while working with [`autogluon`](https://auto.gluon.ai/dev/index.html), I wanted to try the multimodal configuration on a tabular dataset containing text columns. When running it, I encountered the following SSL error: 
 ```bash
