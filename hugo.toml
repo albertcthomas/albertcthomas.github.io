@@ -35,7 +35,7 @@ copyright = "&copy; Copyright 2025, Albert Thomas"
     href = "https://bsky.app/profile/albertcthomas.bsky.social"
   [[params.social]]
     fa_icon = "fas fa-at fa-1x"
-    href = "mailto:albert.thomas@centraliens.net"
+    href = "mailto:albert.ch.thomas@gmail.com"
 
 # Main menu items
 [menu]
