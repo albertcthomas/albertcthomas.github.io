@@ -1,6 +1,6 @@
 +++
 type = "post"
-title = "Trying Ansible for VM management"
+title = "Ansible for VM management"
 date = 2025-02-27
 +++
 
