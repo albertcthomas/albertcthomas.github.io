@@ -14,4 +14,4 @@ Then I found out about [`hf cache delete`](https://huggingface.co/docs/huggingfa
 
 Another nice detail: it shows different revisions of a model, so you can delete just the ones you don’t need instead of wiping the whole thing.
 
-I don’t know all the details yet, but this definitely feels like a better—and probably safer—way to clean your Hugging Face cache. You can read more about the Hugging Face cache in the [documentation](https://huggingface.co/docs/huggingface_hub/v0.34.6/en/guides/manage-cache#understand-caching).
+I don’t know all the details yet, but this definitely feels like a better, and probably safer, way to clean your Hugging Face cache. You can read more about the Hugging Face cache in the [documentation](https://huggingface.co/docs/huggingface_hub/v0.34.6/en/guides/manage-cache#understand-caching).

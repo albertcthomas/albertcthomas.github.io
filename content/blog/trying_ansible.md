@@ -8,7 +8,7 @@ To run my ML experiments, I often have to manage a lot of small VMs: setting the
 
 Some time ago, I came across [this post](https://bsky.app/profile/howard.fm/post/3lbtqd35ldc26) by Jeremy Howard, where he shared a [script to setup a Linux VM](https://github.com/AnswerDotAI/fastsetup/blob/master/ubuntu-initial.sh) automatically. His script was already way better than the commands I was running manually, so I considered adopting it. But then, in the replies to his post, someone asked, "Why not Ansible?" That question intrigued me as I had never heard of Ansible.
 
-[Ansible](https://docs.ansible.com/) is an open-source automation tool for managing and maintaining system configurations. That sounded like what I needed—not just for setting up my VMs, but also for handling incremental changes, like installing a new Python environment or mounting a new disk, without the hassle of SSHing into every single machine. So, I decided to give it a try.
+[Ansible](https://docs.ansible.com/) is an open-source automation tool for managing and maintaining system configurations. That sounded like what I needed, not just for setting up my VMs, but also for handling incremental changes, like installing a new Python environment or mounting a new disk, without the hassle of SSHing into every single machine. So, I decided to give it a try.
 
 #### Setting up Ansible and defining tasks to automate
 Installing Ansible was straightforward. Once installed, you define the tasks you want to automate in a YAML playbook file. As I was not familiar with Ansible, I asked ChatGPT to generate an Ansible playbook based on the steps I usually follow when setting up a VM.
@@ -180,4 +180,4 @@ At the end of the day, automating my VM setup with Ansible was worth it, but it 
 
 That said, now that I have working playbooks, I do appreciate the convenience. Last week, I had to spin up new VMs, and it was a relief to just run the playbook instead of manually configuring everything.
 
-[^1]: Another approach is to use `bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda create/activate ...` (see [this Stack Overflow answer](https://stackoverflow.com/a/55507956)). None of this is specific to Ansible—if I were writing a Bash script that SSHs into a machine to run `conda` commands, I’d run into the same issue.
+[^1]: Another approach is to use `bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda create/activate ...` (see [this Stack Overflow answer](https://stackoverflow.com/a/55507956)). None of this is specific to Ansible, if I were writing a Bash script that SSHs into a machine to run `conda` commands, I’d run into the same issue.
