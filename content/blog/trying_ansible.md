@@ -10,7 +10,7 @@ Some time ago, I came across [this post](https://bsky.app/profile/howard.fm/post
 
 [Ansible](https://docs.ansible.com/) is an open-source automation tool for managing and maintaining system configurations. That sounded like what I needed—not just for setting up my VMs, but also for handling incremental changes, like installing a new Python environment or mounting a new disk, without the hassle of SSHing into every single machine. So, I decided to give it a try.
 
-## Setting up Ansible and defining tasks to automate
+#### Setting up Ansible and defining tasks to automate
 Installing Ansible was straightforward. Once installed, you define the tasks you want to automate in a YAML playbook file. As I was not familiar with Ansible, I asked ChatGPT to generate an Ansible playbook based on the steps I usually follow when setting up a VM.
 
 ```yaml
@@ -121,7 +121,7 @@ ANSIBLE_SSH_ARGS="-o StrictHostKeyChecking=no" ansible-playbook -i inventory.ini
 ```
 This command disables strict host key checking (`-o StrictHostKeyChecking=no`), which is useful for first-time connections but can be a security risk.
 
-## The challenge of setting up conda
+#### The challenge of setting up conda
 Setting up a Python environment with `conda` and `pip` turned out to be a real headache for me. The usual SSH session commands didn’t work as expected, and ChatGPT was not really helpful.
 Some key lessons:
 * Ansible tasks are independent so `conda activate` must be called in the same task where packages are installed, which makes sense in hindsight.
@@ -175,7 +175,7 @@ This resulted in the following playbook:
         bash -i -c "conda activate {{ conda_env_name }} && pip install numpy"
 ```
 
-## The trade-offs of automating with Ansible
+#### The trade-offs of automating with Ansible
 At the end of the day, automating my VM setup with Ansible was worth it, but it took more effort than I expected. This was my first time using Ansible, so there was a learning curve. Some of the frustrations, like dealing with `conda`, would have been just as painful in a bash script. But a downside of using another tool like Ansible is debugging. This is actually related to [the argument given by Jeremy Howard to why he was not using Ansible](https://bsky.app/profile/howard.fm/post/3lbxbvofy2c2c). Debugging a bash script is easy, you just run it line by line until something breaks. Ansible, on the other hand, adds an abstraction layer that can make troubleshooting more tedious. Sure, Ansible has a built-in debugger, but that’s yet another thing to learn and configure. 
 
 That said, now that I have working playbooks, I do appreciate the convenience. Last week, I had to spin up new VMs, and it was a relief to just run the playbook instead of manually configuring everything.

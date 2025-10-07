@@ -9,14 +9,14 @@ draft = false
 
 Unless you are working on a problem where you can afford a true Random Number Generator (RNG), which is basically never for most of us, implementing something random means relying on a pseudo Random Number Generator. I want to share here what I have learnt about good practices with pseudo RNGs and especially the ones available in [numpy](https://numpy.org/). I assume a certain knowledge of numpy and that numpy 1.17 or greater is used. The reason for this is that great new features were introduced in the [random](https://numpy.org/doc/1.18/reference/random/index.html) module of version 1.17. As `numpy` is usually imported as `np`, I will sometimes use `np` instead of `numpy`. Finally, as I will not talk about true RNGs, RNG will always mean pseudo RNG in the rest of this blog post.
 
-### The main messages
+##### The main messages
 1. Avoid using the global numpy RNG. This means that you should avoid using [`np.random.seed`](https://numpy.org/doc/1.18/reference/random/generated/numpy.random.seed.html) and `np.random.*` functions, such as `np.random.random`, to generate random values.
 2. Create a new RNG and pass it around using the [`np.random.default_rng`](https://numpy.org/doc/1.18/reference/random/generator.html#numpy.random.default_rng) function.
 3. Be careful with parallel computations and rely on [numpy strategies for reproducible parallel number generation](https://numpy.org/doc/1.18/reference/random/parallel.html).
 
 Note that with numpy <1.17 the way to create a new RNG is to use [`np.random.RandomState`](https://numpy.org/doc/1.18/reference/random/legacy.html#numpy.random.RandomState) which is based on the popular Mersenne Twister 19937 algorithm. This is also how the global numpy RNG is created. It is still possible to use this function in versions higher than 1.17 but it is now recommended to use `default_rng` which returns an instance of the statistically better [PCG64](https://www.pcg-random.org) RNG.
 
-## Random number generation with numpy
+#### Random number generation with numpy
 When you import `numpy` in your python script a RNG is created behind the scenes. This RNG is the one used when you generate a new random value using a function such as `np.random.random`. I will here refer to this RNG as the global numpy RNG.
 
 Although not recommended, it is a common practice to reset the seed of this global RNG at the beginning of a script using the `np.random.seed` function. Fixing the seed at the beginning ensures that the script is reproducible: the same values and results will be produced each time you run it. However, although sometimes convenient, using the global numpy RNG is considered a bad practice. A simple reason is that using global variables can lead to undesired side effects. For instance one might use `np.random.random` without knowing that the seed of the global RNG was set somewhere else in the codebase. Quoting the [Numpy Enhancement Proposal (NEP) 19](https://numpy.org/neps/nep-0019-rng-policy.html) by Robert Kern about the numpy RNG policy:
@@ -39,7 +39,7 @@ rng.random()
 The reason for seeding your RNG only once is that you can loose on the randomness and the independence of the generated random numbers by reseeding the RNG multiple times. Furthermore obtaining a good seed can be time consuming. Once you have a good seed to instantiate your generator you might as well use it. With a good RNG such as the one returned by `default_rng` you will be ensured good randomness (and independence) of the generated numbers. It might be more dangerous to use different seeds: how do you know that the streams of random numbers obtained with two different seeds are not correlated, or I should say less independent than the ones created from the same seed? That being said, [as explained by Robert Kern](https://github.com/numpy/numpy/issues/15322#issuecomment-573890207), with the RNGs and seeding strategies introduced in numpy 1.17, it could be considered safe enough to recreate new RNGs from the system entropy, e.g. using `default_rng(None)` multiple times. However as explained later be careful when running jobs in parallel and relying on `default_rng(None)`.
 
 
-## Passing a numpy RNG around
+#### Passing a numpy RNG around
 
 As you write functions that you will use on their own as well as in a more complex script it is convenient to be able to pass a seed or your already created RNG. The function `default_rng` allows you to do this very easily. As written above, this function can be used to create a new RNG from your chosen seed, if you pass a seed to it, or from system entropy when passing `None` but you can also pass an already created RNG. In this case the returned RNG is the one that you passed.
 
@@ -54,7 +54,7 @@ You can either pass an `int` seed or your already created RNG to `stochastic_fun
 
 Before knowing about `default_rng`, and before numpy 1.17, I was using the scikit-learn function [`check_random_state`](https://scikit-learn.org/stable/modules/generated/sklearn.utils.check_random_state.html) which is of course heavily used in the scikit-learn codebase. While writing this post I discovered that this function is now available in [scipy](https://github.com/scipy/scipy/blob/master/scipy/_lib/_util.py#L171). A look at the docstring and/or the source code of this function will give you a good idea about what it does. The differences with `default_rng` are that `check_random_state` currently relies on `np.random.RandomState` and that when `None` is passed to `check_random_state` then the function returns the already existing global numpy RNG. The latter can be convenient because if you fix the seed of the global RNG before in your script using `np.random.seed`, `check_random_state` returns the generator that you seeded. However, as explained above, this is not the recommended practice and you should be aware of the risks and the side effects.
 
-## Parallel processing
+#### Parallel processing
 
 You must be careful when using RNGs in conjunction with parallel processing. I usually use the [joblib](https://joblib.readthedocs.io/en/latest/) library to parallelize my code and I will therefore mainly talk about it. However most of the discussion is not specific to joblib.
 
@@ -94,14 +94,14 @@ print(random_vector)
 
 By using a fixed seed you always get the same results and by using `SeedSequence.spawn` you have an independent RNG for each of the iterations. Note that I used the convenient `default_rng` function in `stochastic_function`. You can also see that the `SeedSequence` of the existing RNG is a private attribute. Accessing the `SeedSequence` might become easier in future versions of numpy (more information [here](https://github.com/numpy/numpy/issues/15322#issuecomment-626400433)).
 
-## Resources
+#### Resources
 
-### Numpy RNGs
+##### Numpy RNGs
 * [The documentation of the numpy random module](https://numpy.org/doc/1.18/reference/random/index.html) is the best place to find information and where I found most of the information that I share here.
 * [The Numpy Enhancement Proposal (NEP) 19 on the Random Number Generator Policy](https://numpy.org/neps/nep-0019-rng-policy.html) which lead to the changes introduced in numpy 1.17
 * A [recent numpy issue](https://github.com/numpy/numpy/issues/15322) about the `check_random_state` function and RNG good practices, especially [this comment](https://github.com/numpy/numpy/issues/15322#issuecomment-573890207) by Robert Kern.
 * [How do I set a random_state for an entire execution?](https://scikit-learn.org/stable/faq.html#how-do-i-set-a-random-state-for-an-entire-execution) from the scikit-learn FAQ.
 
-### RNGs in general
+##### RNGs in general
 * [Random numbers for parallel computers: Requirements and methods, with emphasis on GPUs](https://www.sciencedirect.com/science/article/pii/S0378475416300829) by L'Ecuyer et al. (2017)
 * To know more about the default RNG used in numpy, named PCG, I recommend the [PCG paper](https://www.pcg-random.org/paper.html) which also contains lots of useful information about RNGs in general. The [pcg-random.org website](https://www.pcg-random.org) is also full of interesting information about RNGs.

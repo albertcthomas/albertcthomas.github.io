@@ -9,7 +9,7 @@ I have been working as a machine learning researcher in the industry for almost 
 
 As a machine learning researcher relying heavily on Python, the examples I will share here are based on my experiences with tools such as `conda` and `pip` on Linux systems. However, most of the concepts still hold in general and can help you debug or understand proxy issues with other tools.
 
-## What is a proxy server? 
+#### What is a proxy server? 
 A proxy server acts as an intermediary between you (on the company network) and the internet. All the traffic between you and the internet passes through this proxy server. This allows companies to control what goes in or out, such as blocking access to specific websites or preventing the upload of large data to external storage services. For your applications to access the web and communicate with external services, they must be configured to route their traffic through the proxy server. Most of the time, especially in corporate environments, the proxy server requires authentication: a username and password.
 
 ![proxy_server](proxy_server_white.jpg "Proxy server")
@@ -18,7 +18,7 @@ In most cases, the proxy is configured by your company's IT team on your machine
 
 Keep in mind that while usually all external traffic requires the proxy, internal traffic does not. If you set up a proxy configuration without specifying exceptions for internal resources, those requests will fail.
 
-## Proxy configuration
+#### Proxy configuration
 To configure an application to use a proxy server and have a successful connection, you need the proxy URL (e.g., `http://proxy_url/`), the port to use (typically appended to the URL, e.g., `http://proxy_url:proxy_port/`) and often authentication information, a username and a password, usually but not always, passed in the URL (e.g., `http://user_id:user_pwd@proxy_url:proxy_port/`). The authentication information allows the proxy server to identify the user and enforce appropriate permissions. If your credentials are incorrectly encoded or if the application fails to interpret them, you’ll likely encounter an HTTP 407 Authentication Error.
 
 Although some applications require independent proxy configuration, most will check the following environment variables (on Linux systems). You can verify in your application’s documentation how to configure the proxy.
@@ -36,7 +36,7 @@ Using these environment variables will impact all applications that rely on them
 
 In some cases, this setup is sufficient and you will be fine. The main challenge is ensuring that your application reads and interprets the configuration correctly. The next potential obstacle, often more confusing for users, is SSL errors.
 
-## SSL/TLS verification
+#### SSL/TLS verification
 When communicating with an external website using HTTPS, SSL/TLS certificates are used to ensure that the website you're communicating with is genuinely the one you intend to reach, and not an imposter. Your system maintains a trusted list of Certificate Authorities (CAs), and when you establish a connection, it checks that the website's certificate has been issued by one of these trusted CAs. This process happens automatically on most operating systems. However **in a corporate environment, the corporate proxy might replace the original website's certificate with one it has issued itself, and therefore the proxy acts as a Certificate Authority**. If the proxy's certificate isn't included in your system's list of trusted CAs, you'll encounter an SSL/TLS error.
 
 Disabling SSL verification is an option but is strongly discouraged, because it prevents you from verifying the authenticity of the connection. This is also why some applications make it very difficult to disable SSL verification. The preferred solution is to obtain your corporate proxy's certificate and add it to your system's trusted list or another list of certificates that you want your application to use[^2].
@@ -49,7 +49,7 @@ On Ubuntu systems the system-wide trusted CA list is located at `/etc/ssl/certs/
 
 Some applications may not use the system-wide trusted CA list by default. For instance, the Python `requests` package might rely on the `certifi` Python package which provides a carefully curated list of Certificate Authorities. Running `python -m certifi` will get you the location of the file concatenating all the certificates if you want to use it instead of the system-wide CA list.
 
-## Conda and Pip
+#### Conda and Pip
 It’s helpful to understand how `conda` and `pip` handle external requests and how to configure them to work behind a proxy.
 
 To handle their HTTP requests, including package downloads, both `conda` and `pip` use the [`requests` Python HTTP library](https://requests.readthedocs.io/en/latest/), which itself relies on the [`urllib3` HTTP client for Python](https://urllib3.readthedocs.io/en/stable/). The `requests` library is designed to be more user-friendly and higher-level than `urllib3`[^3][^4].
@@ -69,7 +69,7 @@ print(DEFAULT_CA_BUNDLE_PATH)
 
 Make sure that the `http_proxy`, `https_proxy` and `REQUESTS_CA_BUNDLE` environment variables are set in the terminal, `tmux`/`screen` or Python session you are using. Finally, if you don't have sudo rights you can always get the CA list provided by `certifi`, append your corporate certificate to it and then set the `REQUESTS_CA_BUNDLE` environment variable accordingly.
 
-## Testing and debugging
+#### Testing and debugging
 Diagnosing proxy errors can be challenging. I like to use the following `urllib3` code snippet as a sanity check when testing or debugging my proxy configuration. This approach has limitations as this directly uses `urllib3` which might not be the library handling the HTTP requests for the specific application you are trying to use. This also avoids many steps (reading the environment variables, encoding the special characters, making sure I am passing the proxy configuration to the application) but it can still help understand issues quickly and iterate faster.
 ```python
 from urllib3 import ProxyManager, make_headers
@@ -119,7 +119,7 @@ One important thing to be aware of is that **some proxies cache your configurati
 
 I hope this blog post will help you resolve your proxy issues or at least make you feel more confident when dealing with them. Even with experience, I sometimes encounter proxy or SSL/TLS errors that I can’t immediately explain, and debugging can be challenging, especially when the problem occurs deep within the connection chain.
 
-## Remarks and resources
+#### Remarks and resources
 * It is a bit annoying that there are applications that will not read your `http_proxy` environment variables or will not support having authentication information. It would also have been nice to have an environment variable to pass the trusted CA list that would be read by almost all applications as `REQUESTS_CA_BUNDLE` is an environment variable specific to `requests`.
 * A website on proxies with a great guide for SSL/TLS certificates <https://smarie.github.io/develop-behind-proxy/know_your_proxy/>.
 * There are tools such as CNTLM that encrypt your password, centralize the proxy configuration and work for applications that do not allow passing a username and password to the proxy configuration.
