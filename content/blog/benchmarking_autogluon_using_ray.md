@@ -1,6 +1,6 @@
 +++
 type = "post"
-title = "Benchmarking AutoGluon Using Ray"
+title = "Benchmarking AutoGluon using Ray"
 date = 2025-10-07
 +++
 
