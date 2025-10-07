@@ -52,8 +52,7 @@ This approach worked well overall, but I had another issue. Sometimes, Ray would
 
 This kind of setup works best when the codebase is stable. When the code changes frequently, debugging errors through Ray can be cumbersome. It's usually easier to debug tasks outside of Ray first and only distribute them once the code is stable. Overall, the setup worked and allowed me to run a large number of AutoGluon tasks in parallel with fixed resource constraints. The key lessons were:
 
-* Ray makes distribution easy but not foolproof. The logical vs physical resource model means you still need to think carefully about task placement and resource isolation if you want strict control. Ray worked for my use case, but it may not have been the most natural fit. Other orchestration approaches could have achieved the same goal with different trade-offs in complexity, isolation, and monitoring.
-* AutoGluon's internal Ray usage can interfere with your own cluster. I managed to make it work through some workarounds, but this setup isn't necessarily ideal.
+* Ray makes distribution easy but not foolproof. The logical vs physical resource model means you still need to think carefully about task placement and resource isolation if you want strict control. Other orchestration approaches could have achieved the same goal with different trade-offs in complexity, isolation, and monitoring.
 * For a small number of machines, the manual Ray cluster setup was fine, though with better environment management I could probably automate this fully with YAML configs.
 * One thing I didn't fully solve was Ray's behavior when tasks exceeded memory. Ray killed tasks for going over its memory threshold, even though the same AutoGluon runs succeeded without Ray. One solution would be to disable Ray task killing because of out of memory but this seemed a bit dangerous.
 
