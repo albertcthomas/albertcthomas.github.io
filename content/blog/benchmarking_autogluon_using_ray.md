@@ -24,7 +24,7 @@ Setting up the Ray cluster was mostly straightforward, although I ended up doing
 
 #### Ray resources are logical
 
-By default, Ray uses logical resources for scheduling and doesn't enforce CPU affinity or strict OS-level isolation. This meant I couldn't guarantee that each task would be pinned to a single VM, which was something I wanted for these benchmarks. There might be ways to assign tasks to specific nodes (VMs) of the cluster with [Ray scheduling strategies](https://docs.ray.io/en/latest/ray-core/scheduling/index.html#scheduling-strategies) but I haven't played with this. I provide more details on Ray logical versus physical resources at the [end of the post](#appendix-more-on-ray-resources).
+By default, Ray uses logical resources for scheduling and doesn't enforce CPU affinity or strict OS-level isolation. This meant I couldn't guarantee that each task would be pinned to a single VM, which was something I wanted for this benchmark. There might be ways to assign tasks to specific nodes (VMs) of the cluster with [Ray scheduling strategies](https://docs.ray.io/en/latest/ray-core/scheduling/index.html#scheduling-strategies) but I haven't played with this. I provide more details on Ray logical versus physical resources at the [end of the post](#appendix-more-on-ray-resources).
 
 #### Isolating AutoGluon from the external Ray cluster
 
