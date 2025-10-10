@@ -67,7 +67,7 @@ from requests.utils import DEFAULT_CA_BUNDLE_PATH
 print(DEFAULT_CA_BUNDLE_PATH)
 ```
 
-Make sure that the `http_proxy`, `https_proxy` and `REQUESTS_CA_BUNDLE` environment variables are set in the terminal, `tmux`/`screen` or Python session you are using. Finally, if you don't have sudo rights you can always get the CA list provided by `certifi`, append your corporate certificate to it and then set the `REQUESTS_CA_BUNDLE` environment variable accordingly.
+Make sure that the `http_proxy`, `https_proxy` and `REQUESTS_CA_BUNDLE` environment variables are set in the terminal, `tmux`/`screen` or Python session you are using. Finally, if you don't have sudo rights you can always get the CA list provided by `certifi`, append your corporate certificate to it and then set the `REQUESTS_CA_BUNDLE` environment variable accordingly. I also explain how I solved an SSL certificate error not related to `pip` or `conda` at the [end of the post](#appendix-solving-an-ssl-certificate-error). 
 
 #### Testing and debugging
 Diagnosing proxy errors can be challenging. I like to use the following `urllib3` code snippet as a sanity check when testing or debugging my proxy configuration. This approach has limitations as this directly uses `urllib3` which might not be the library handling the HTTP requests for the specific application you are trying to use. This also avoids many steps (reading the environment variables, encoding the special characters, making sure I am passing the proxy configuration to the application) but it can still help understand issues quickly and iterate faster.
@@ -125,8 +125,32 @@ I hope this blog post will help you resolve your proxy issues or at least make y
 * There are tools such as CNTLM that encrypt your password, centralize the proxy configuration and work for applications that do not allow passing a username and password to the proxy configuration.
 * Discussion on `HTTP_PROXY` or `http_proxy` and the different ways to pass multiple domains to `no_proxy`: <https://about.gitlab.com/blog/2021/01/27/we-need-to-talk-no-proxy/>
 
+#### Appendix: Solving an SSL certificate error
+
+I explained how to use `REQUESTS_CA_BUNDLE` to specify the location of the SSL certificate bundle for `pip` and `conda`. However, this applies specifically to the `requests` python library, which both `conda` and `pip` rely on internally **but not everything Python does**.
+
+For instance, I was using [`autogluon`](https://auto.gluon.ai/dev/index.html) for one of my projects and I wanted to try the multimodal configuration on a tabular dataset containing text columns. When running it, I encountered the following SSL error: 
+```bash
+[nltk_data] Error loading averaged_perceptron_tagger: <urlopen error
+[nltk_data]     [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify
+[nltk_data]     failed: self-signed certificate in certificate chain
+[nltk_data]     (_ssl.c:1006)>
+```
+It appears that the underlying library detected my company's self-signed certificate but lacked the necessary certificate authority (CA) to validate it. Since my company's certificates are already included in my system-wide trusted CA list at `/etc/ssl/certs/ca-certificates.crt`, this meant only one thing: the underlying library wasn’t looking in the right place.
+
+Digging deeper into the error message and `nltk`, I discovered that the request was made using `urllib` and I found that `urllib` relies on Python's `ssl` module for certificate validation. To check where `ssl` is looking for the certificate, I ran:
+```python
+import ssl
+print(ssl.get_default_verify_paths())
+```
+As expected, the location used was not the system-wide trusted CA list. The environment variable to use for the `ssl` module is `SSL_CERT_DIR`. Setting `SSL_CERT_DIR` to `/etc/ssl/certs/ca-certificates.crt` fixed the issue[^6].
+
+Unfortunately again, there doesn’t seem to be a single, universal environment variable that all applications agree on for locating SSL certificates. Instead, we have a mess of different environment variables (`REQUESTS_CA_BUNDLE`, `CURL_CA_BUNDLE`, `SSL_CERT_DIR`, ...), and each tool decides for itself which one to follow.
+
+
 [^1]: See the “Reserved characters after percent-encoding” table on the [Percent-encoding Wikipedia page](https://en.wikipedia.org/wiki/Percent-encoding) for guidance.
 [^2]: Ensure this list also includes other CAs, as the proxy might not always replace the original certificate.
 [^3]: `pip` vendors `requests` and `urllib3`, meaning they are packaged directly within `pip` itself.
 [^4]: Don't confuse the third party package `urllib3` and the `urllib` module available in the Python standard library.
 [^5]: [`mamba`](https://mamba.readthedocs.io/en/latest/index.html), which serves as a faster alternative to `conda`, does not use the `requests` library. However, it still reads the same environment variables as `conda`, allowing the proxy to be configured in the same manner.
+[^6]: `/etc/ssl/certs/ca-certificates.crt` is not a directory but this worked for me. You can also use `SSL_CERT_FILE`.
