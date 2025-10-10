@@ -24,20 +24,20 @@ Setting up the Ray cluster was mostly straightforward, although I ended up doing
 
 #### Ray resources are logical
 
-I learned through this experience that Ray uses logical resources for scheduling, which means it doesn’t enforce CPU affinity or hard resource limits at the OS level. As a result, Ray doesn’t guarantee that one and only one task will be pinned to a single VM by default. However, because I requested the same number of CPUs per task as the number available on each VM, Ray’s scheduler behaved as I was hoping it would: each task was placed entirely on a single VM. This happens because Ray always places a task on a single node (VM) that has at least the number of requested CPUs available (in terms of logical resources). Once a VM was fully occupied, Ray had to pick another one for the next task. You can read about this in [Ray documentation](https://docs.ray.io/en/latest/ray-core/scheduling/index.html#resources). There might be ways to assign tasks to specific nodes of the cluster with [Ray scheduling strategies](https://docs.ray.io/en/latest/ray-core/scheduling/index.html#scheduling-strategies) but I haven't played with this. If you want to learn more on Ray logical versus physical resources I give more details about it at the [end of the post](#appendix-more-on-ray-resources).
+I learned through this experience that Ray uses logical resources for scheduling, which means it doesn’t enforce CPU affinity or hard resource limits at the OS level. As a result, Ray doesn’t guarantee that one and only one task will be pinned to a single VM by default. However, because I requested the same number of CPUs per task as the number available on each VM, Ray’s scheduler behaved as I was hoping it would: one and only one task was placed on a single VM. This happens because Ray always places a task on a single node (VM) that has at least the number of requested CPUs available (in terms of logical resources). Since a VM is fully occupied by a task, Ray has to select another VM for the next task. You can read about this in [Ray documentation](https://docs.ray.io/en/latest/ray-core/scheduling/index.html#resources). There might be ways to assign tasks to specific nodes of the cluster with [Ray scheduling strategies](https://docs.ray.io/en/latest/ray-core/scheduling/index.html#scheduling-strategies) but I haven't played with this. If you want to learn more on Ray logical versus physical resources I give more details about it at the [end of the post](#appendix-more-on-ray-resources).
 
 #### Isolating AutoGluon from the external Ray cluster
 
 AutoGluon uses Ray under the hood, and this can lead to conflicts when you also manage your own Ray cluster. AutoGluon actually [discourages using Ray on top of it](https://auto.gluon.ai/dev/tutorials/tabular/tabular-faq.html#i-know-autogluon-uses-ray-underneath-what-s-the-best-practice-for-me).
 
-In my case, AutoGluon’s internal Ray instance connected to the entire cluster and scheduled its own tasks across all nodes. My hypothesis is that AutoGluon internally launches smaller tasks (with a `num_cpus` being less than the node capacity), allowing Ray's scheduler to spread them across multiple nodes when a single node still has some free logical CPUs. This would require further testing to confirm[^3].
+In my case, AutoGluon’s internal Ray instance connected to the entire cluster and scheduled its own tasks across all nodes. My hypothesis is that AutoGluon internally launches smaller tasks (requesting fewer CPUs than the total available on a node), which allows Ray’s scheduler to distribute these tasks across multiple nodes depending on resource availability. This would require further testing to confirm[^3].
 
 To isolate things, I first had to wrap the AutoGluon call in a dedicated Python script that was launched by the Ray task as a subprocess using `subprocess.run`:
 ```python
 import subprocess
 import ray
 
-@ray.remote(num_cpus=8)
+@ray.remote(num_cpus=8)  # 8 logical CPUs per task
 def run_autogluon_task(challenge_name):
     subprocess.run(
         ["python", "autogluon_script.py", challenge_name],
