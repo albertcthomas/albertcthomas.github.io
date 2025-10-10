@@ -8,15 +8,15 @@ The story behind this one: my paternity leave was imminent and I wanted to have 
 
 My plan was to use [Ray](https://docs.ray.io/en/latest/index.html) to schedule tasks across several VMs automatically and benefit from all its features: the dashboard to monitor tasks and the load on each machine, stop tasks taking too much time, retry failed ones, and so on. To be honest, I also just wanted to try Ray for this. I knew it should be possible, and this was a good excuse to dive in. I had previously used `ray.tune` on a single machine but had never set up a cluster across multiple VMs. Although everything eventually worked the way I wanted, it was more difficult than I anticipated and required quite a bit of debugging and babysitting at first. I also learned a lot about Ray (and AutoGluon) in the process, so I wanted to share some of those lessons here.
 
-#### Resource constraints and AutoGluon
+#### Enforcing resource constraints for AutoML comparisons
 
-One of the key aspects of running this benchmark was ensuring that each AutoGluon run had access to the same amount of computational resources. This is important if we want to make fair comparisons between different AutoML solutions under controlled conditions. In practice, this means fixing the number of CPUs (and GPUs) and the amount of memory available to each run.
+One of the key aspects of running this benchmark was making sure that we could enforce computational resource constraints for each run. This is important if we want to make fair comparisons between different AutoML solutions under controlled conditions. In practice, this means fixing the number of CPUs (and GPUs) and the amount of memory available to each run.
 
 As written in [AMLB, An AutoML Benchmark](https://arxiv.org/abs/2207.12560), running each task on a specific EC2 instance type ensures consistent resources. I followed a similar principle here. Instead of relying on large shared machines, I used a pool of identical VMs and aimed to run one task per VM to guarantee fixed resources per run.
 
 AutoGluon exposes parameters to control resources like CPUs, GPUs, and memory [^1]. However, the memory parameter is only a soft limit: in most cases it is respected, but it can occasionally be exceeded. In retrospect, I could have experimented with this, but given the VMs I had, it was simpler to enforce resource limits at the VM level.
 
-To orchestrate this setup efficiently, I turned to Ray that could launch one run per machine with fixed resource constraints.
+To orchestrate this setup, I turned to Ray with the goal of launching one run per machine under fixed resource constraints. In practice, achieving this was not straightforward.
 
 #### Setting up the Ray cluster
 
@@ -24,14 +24,15 @@ Setting up the Ray cluster was mostly straightforward, although I ended up doing
 
 #### Ray resources are logical
 
-By default, Ray uses logical resources for scheduling and doesn't enforce CPU affinity or strict OS-level isolation. This meant I couldn't guarantee that each task would be pinned to a single VM, which was something I wanted for this benchmark. There might be ways to assign tasks to specific nodes (VMs) of the cluster with [Ray scheduling strategies](https://docs.ray.io/en/latest/ray-core/scheduling/index.html#scheduling-strategies) but I haven't played with this. I provide more details on Ray logical versus physical resources at the [end of the post](#appendix-more-on-ray-resources).
+I learned through this experience that Ray uses logical resources for scheduling which means it doesn't enforce CPU affinity or hard resource limits at the OS level. However, I was lucky that Ray somehow enforced node (VM) affinity in my case. I requested the same number of CPUs as the number available on each VM for each task. Since Ray always places a task on a single node that has at least `num_cpus` logical CPUs available, each task was placed entirely on one VM. Once a node was fully occupied, Ray had to pick another node for the next task. You can read about this in [Ray documentation](https://docs.ray.io/en/latest/ray-core/scheduling/index.html#resources). There might be ways to assign tasks to specific nodes of the cluster with [Ray scheduling strategies](https://docs.ray.io/en/latest/ray-core/scheduling/index.html#scheduling-strategies) but I haven't played with this. If you want to learn more on Ray logical versus physical resources I give more details about it at the [end of the post](#appendix-more-on-ray-resources).
 
 #### Isolating AutoGluon from the external Ray cluster
 
-AutoGluon uses Ray under the hood, and this can lead to conflicts when you also manage your own Ray cluster. AutoGluon actually [discourages using Ray on top of it](https://auto.gluon.ai/dev/tutorials/tabular/tabular-faq.html#i-know-autogluon-uses-ray-underneath-what-s-the-best-practice-for-me). In my case, I was launching each AutoGluon run through Ray, but because Ray doesn't isolate resources per VM by default, AutoGluon detected the entire cluster's resources and ignored the per-VM boundaries I wanted to enforce.
+AutoGluon uses Ray under the hood, and this can lead to conflicts when you also manage your own Ray cluster. AutoGluon actually [discourages using Ray on top of it](https://auto.gluon.ai/dev/tutorials/tabular/tabular-faq.html#i-know-autogluon-uses-ray-underneath-what-s-the-best-practice-for-me).
 
-To isolate things, I first had to wrap the AutoGluon call in a dedicated Python script that was launched by the Ray task (remote function) as a subprocess using `subprocess.run`:
+In my case, AutoGluon’s internal Ray instance connected to the entire cluster and scheduled its own tasks across all nodes. My hypothesis is that AutoGluon internally launches smaller tasks (with a `num_cpus` being less than the node capacity), allowing Ray's scheduler to spread them across multiple nodes when a single node still has some free logical CPUs. This would require further testing to confirm[^3].
 
+To isolate things, I first had to wrap the AutoGluon call in a dedicated Python script that was launched by the Ray task as a subprocess using `subprocess.run`:
 ```python
 import subprocess
 import ray
@@ -44,9 +45,9 @@ def run_autogluon_task(challenge_name):
 
 ```
 
-Then, inside the Python script that invokes AutoGluon (`autogluon_script.py`), I had to initialize a local Ray instance with `ray.init(address="local")` just before running AutoGluon, so that it uses the VM's local Ray cluster instead of connecting to the external one. After that, AutoGluon stayed confined to the resources of the VM it was launched on, which was the behavior I wanted.
+Then, inside the Python script that invokes AutoGluon (`autogluon_script.py`), I initialized a local Ray instance with `ray.init(address="local")` just before running AutoGluon, so that AutoGluon connects to the VM's local Ray cluster instead of connecting to the external one. After that, AutoGluon stayed confined to the resources of the VM it was launched on, which was the behavior I wanted.
 
-This approach worked well overall, but I had another issue. Sometimes, Ray would kill a task because it exceeded its memory threshold [^3], but the subprocess running AutoGluon would keep running on the VM. Ray then assumed the machine was free and tried to schedule new tasks on it, which led to out-of-memory errors. Increasing Ray's memory thresholds helped in some cases, but the key fix was enabling [`RAY_kill_child_processes_on_worker_exit_with_raylet_subreaper=true`](https://docs.ray.io/en/latest/ray-core/user-spawn-processes.html), which ensured orphaned subprocesses were properly killed when Ray terminated a task.
+This approach worked well overall, but I had another issue. Sometimes, Ray would kill a task because it exceeded its memory threshold [^4], but the subprocess running AutoGluon would keep running on the VM. Ray then assumed the machine was free and tried to schedule new tasks on it, which led to out-of-memory errors. Increasing Ray's memory thresholds helped in some cases, but the key fix was enabling [`RAY_kill_child_processes_on_worker_exit_with_raylet_subreaper=true`](https://docs.ray.io/en/latest/ray-core/user-spawn-processes.html), which ensured orphaned subprocesses were properly killed when Ray terminated a task.
 
 #### Lessons learned
 
@@ -65,4 +66,5 @@ If setting `num_cpus` for a Ray task does not prevent your task from using more 
 
 [^1]: AutoGluon has `num_cpus`, `num_gpus` and `memory_limit` parameters that you can check in the [documentation](https://auto.gluon.ai/stable/api/autogluon.tabular.TabularPredictor.fit.html#autogluon.tabular.TabularPredictor.fit).
 [^2]: You need to make sure you have the exact same setup on all the VMs.
-[^3]: To be completely exact, Ray kills a task when a memory threshold is exceeded at the **node (VM)** level, not the task level. Ray monitors memory usage on each node to prevent out-of-memory errors, but it does not monitor or enforce memory limits for individual tasks. This behavior is explained [here](https://docs.ray.io/en/latest/ray-core/scheduling/ray-oom-prevention.html).
+[^3]: From Ray documentation, ["the nodes are sorted to first favor those that already have tasks or actors scheduled (for locality), then to favor those that have low resource utilization (for load balancing)"](https://docs.ray.io/en/latest/ray-core/scheduling/index.html#default). This suggests that AutoGluon’s smaller tasks should stay on the same node but this locality rule might apply at the cluster level, not with respect to the parent task's node.
+[^4]: To be completely exact, Ray kills a task when a memory threshold is exceeded at the **node (VM)** level, not the task level. Ray monitors memory usage on each node to prevent out-of-memory errors, but it does not monitor or enforce memory limits for individual tasks. This behavior is explained [here](https://docs.ray.io/en/latest/ray-core/scheduling/ray-oom-prevention.html).
