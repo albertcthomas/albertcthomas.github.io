@@ -1,6 +1,6 @@
 +++
 type = "post"
-title = "Good practices with numpy random number generators"
+title = "Best practices for using NumPy's random number generators"
 date = 2020-04-07
 draft = false
 +++
